@@ -1,81 +1,93 @@
- Banking Payments SQL Analysis
+# Banking SQL Analysis – Payment Reconciliation
 
-## About the Project
+## Project Overview
 
-This project demonstrates the practical use of SQL for banking and payments data analysis.
+This project demonstrates how SQL can be used to analyze corporate payment data and reconcile payments against their corresponding settlements.
 
-I created a simulated banking database in PostgreSQL containing customers, accounts and payment transactions, and used SQL to answer business-related questions and calculate payment KPIs.
+The objective is to identify payments that have been successfully reconciled, payments with amount discrepancies, and payments for which no matching settlement record exists.
 
-The project focuses on using SQL not only for data retrieval, but also for investigating business questions relevant to Product Management and Business Analysis in banking and payments.
+The project uses PostgreSQL and a sample banking dataset.
+
+## Business Context
+
+In payment operations, reconciliation helps ensure that payment records match settlement records. Differences or missing records may require investigation by Operations or Payments teams.
+
+This analysis addresses three key questions:
+
+* Which payments match their settlement records?
+* Are there differences between payment amounts and settlement amounts?
+* Which payments have no corresponding settlement record?
+
+A missing settlement record does not automatically mean that a payment has failed. Further investigation is required to determine the cause.
 
 ## Data Model
 
-The database contains three main entities:
+The analysis uses two tables:
 
-CUSTOMERS → ACCOUNTS → PAYMENTS
+* **`payments`** – contains payment records, including payment IDs and amounts.
+* **`settlements`** – contains settlement records, including payment IDs, settlement amounts, dates, and statuses.
 
-- A customer can have one or multiple accounts.
-- Each account belongs to a customer.
-- An account can have multiple payment transactions.
+The tables are linked using `payment_id`.
 
-Primary and foreign keys are used to establish the relationships between the entities.
+## SQL Implementation
 
-## Business Questions
+The project uses a PostgreSQL view named `vw_payment_reconciliation`.
 
-The SQL analysis addresses questions such as:
+The view combines payment and settlement data using a `LEFT JOIN`. This ensures that payments without a matching settlement record remain visible in the results.
 
-- What is the total payment volume by currency?
-- What is the payment success rate?
-- Which payments were rejected?
-- Which customers generate the highest completed payment volumes?
-- Which customers have payment volumes above a defined threshold?
-- How are payments distributed by payment type?
-- How do payment volumes evolve over time?
-- Which payments are above the average payment amount?
-- Which customers have payment volumes above the average customer payment volume?
-- How are rejected payments distributed across payment types?
+The reconciliation logic identifies the following statuses:
 
-## SQL Skills Demonstrated
+| Status               | Meaning                                                                        |
+| -------------------- | ------------------------------------------------------------------------------ |
+| `MATCH`              | Payment and settlement amounts match, and the settlement status is `SETTLED`.  |
+| `AMOUNT_MISMATCH`    | Payment and settlement amounts differ, and the settlement status is `SETTLED`. |
+| `MISSING_SETTLEMENT` | No matching settlement record exists.                                          |
+| `NOT_SETTLED`        | A settlement record exists, but its status is not `SETTLED`.                   |
 
-- SELECT and filtering with WHERE
-- ORDER BY
-- INNER JOIN
-- Aggregations: COUNT, SUM and AVG
-- GROUP BY and HAVING
-- CASE expressions
-- Date functions
-- Subqueries
-- Common Table Expressions (CTEs)
-- Primary and Foreign Keys
-- Basic relational data modelling
-- KPI calculation from transaction-level data
+The order of the conditions in the SQL view determines which status is assigned when more than one exception applies.
 
-## Example: Payment Success Rate
+## Results
 
-One of the KPIs calculated in the project is Payment Success Rate.
+The current sample dataset contains 30 payment records and 6 settlement records.
 
-The analysis derives the KPI directly from transaction-level payment data by comparing successfully completed payments with the relevant payment population.
+| Reconciliation status | Number of payments | Total payment amount | Total settlement amount |
+| --------------------- | -----------------: | -------------------: | ----------------------: |
+| `MATCH`               |                  5 |             8,300.00 |                8,300.00 |
+| `AMOUNT_MISMATCH`     |                  1 |             2,300.00 |                2,250.00 |
+| `MISSING_SETTLEMENT`  |                 24 |            79,635.00 |                       — |
 
-This demonstrates how SQL can be used to transform transaction data into information that can support product monitoring and business decisions.
+### Key Findings
 
-## Tools
+* **5 payments matched** their settlement records.
+* **1 payment had an amount discrepancy** of 50.00.
+* **24 payments had no matching settlement record** in the sample dataset.
 
-- PostgreSQL
-- pgAdmin 4
-- SQL
+These findings identify exceptions for further investigation. They do not, by themselves, establish the operational cause of the missing settlement records.
 
 ## Repository Structure
 
-- `01_database_setup.sql` – database structure and simulated banking data
-- `02_banking_analysis.sql` – SQL queries addressing banking and payment business questions
-- `README.md` – project documentation
+* `01_database_setup.sql` – database setup and initial data preparation.
+* `02_banking_analysis.sql` – banking data analysis queries.
+* `03_payment_reconciliation.sql` – reconciliation view, summary query, and exception analysis.
+* `README.md` – project overview, methodology, and results.
 
-## Data Privacy
+## Skills Demonstrated
 
-All customers, accounts, IBANs, beneficiaries and transactions included in this project are fictional and were created exclusively for learning and demonstration purposes.
+* SQL and PostgreSQL
+* `LEFT JOIN`, `CASE WHEN`, aggregation, and filtering
+* Data quality checks and exception identification
+* Payment and settlement reconciliation concepts
+* Translating a business control into SQL logic
+* Communicating findings for operational investigation
 
-No real customer or banking data is used.
+## Potential Next Steps
 
-## Purpose
+* Add test cases for non-settled records and amount discrepancies.
+* Investigate missing settlement records using additional operational data.
+* Build a Power BI dashboard to visualize reconciliation outcomes and exceptions.
 
-The purpose of this project is to strengthen and demonstrate practical SQL knowledge in a banking and payments context, particularly from a Product Management and Business Analysis perspective.
+## Disclaimer
+
+This project uses sample data for learning and portfolio purposes. The results should not be interpreted as actual banking operational data.
+ 
+
